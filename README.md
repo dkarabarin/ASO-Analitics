@@ -38,20 +38,22 @@
 ### Расчёт мотива и прогноз позиции
 <img width="1914" height="953" alt="image" src="https://github.com/user-attachments/assets/bc0d0ef4-4582-45f9-9624-01a4e6ad9836" />
 
-<img width="1916" alt="motiv-result" src="https://github.com/user-attachments/assets/34b0b12e-c9ba-4f4f-b5ba-cc95f99e9af9" />
-
 ### Анализ фризов и iOS-обновлений
-<img width="2683" alt="freeze_and_updates" src="https://github.com/user-attachments/assets/84e5cdbd-8241-4e19-a82e-df236d8290ed" />
+<img width="2683" height="2061" alt="freeze_and_updates" src="https://github.com/user-attachments/assets/8cf9085c-ec30-4ded-a155-aa5fe387d178" />
+
 
 ### ML-модели
-<img width="2383" alt="feature_importance" src="https://github.com/user-attachments/assets/d29ed413-2c2c-4763-8b93-b4b545727ac7" />
-<img width="2673" alt="model_comparison" src="https://github.com/user-attachments/assets/1dc09c41-c684-4fc8-835b-be57f8828a36" />
+<img width="2383" height="1767" alt="feature_importance_1day" src="https://github.com/user-attachments/assets/6c77faef-7c21-4649-9f21-abf9adc87c6c" />
+<img width="2673" height="1032" alt="model_comparison_1day" src="https://github.com/user-attachments/assets/572b3a1a-6286-428d-a502-cce433fcf918" />
+
 
 ### Проверка гипотез и правил
-<img width="1914" alt="hypotheses" src="https://github.com/user-attachments/assets/29a98426-0b87-4a1d-a827-7d22b9e5303c" />
+<img width="870" height="790" alt="image" src="https://github.com/user-attachments/assets/30cd5e93-afea-41e7-9289-2e04f8be9875" />
+
 
 ### LLM-ассистент
-<img width="1917" alt="llm" src="https://github.com/user-attachments/assets/590fc0c9-a2be-457f-a8f9-797194ce7ed5" />
+<img width="884" height="893" alt="image" src="https://github.com/user-attachments/assets/c1ddbddc-2bd1-41c0-914e-82193e88c085" />
+
 
 ---
 
