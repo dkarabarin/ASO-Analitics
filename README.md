@@ -31,10 +31,13 @@
 ## Скриншоты
 
 ### Главная страница
-<img width="1913" alt="main" src="https://github.com/user-attachments/assets/c53f7d30-5fd3-47de-8c97-decfcc9b7cd0" />
+<img width="1909" height="951" alt="image" src="https://github.com/user-attachments/assets/ef43e1a0-f66d-404d-92ef-afeebaa03a78" />
+
+
 
 ### Расчёт мотива и прогноз позиции
-<img width="1916" alt="motiv-form" src="https://github.com/user-attachments/assets/63566b50-d750-4bf9-a31a-686a4b76f1d8" />
+<img width="1914" height="953" alt="image" src="https://github.com/user-attachments/assets/bc0d0ef4-4582-45f9-9624-01a4e6ad9836" />
+
 <img width="1916" alt="motiv-result" src="https://github.com/user-attachments/assets/34b0b12e-c9ba-4f4f-b5ba-cc95f99e9af9" />
 
 ### Анализ фризов и iOS-обновлений
