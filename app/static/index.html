@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASO Analytics Service v4.1</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #fc8181;
+            --purple: #9f7aea;
+            --orange: #f6ad55;
+            --gray-50: #f7fafc;
+            --gray-100: #edf2f7;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e0;
+            --gray-400: #a0aec0;
+            --gray-500: #718096;
+            --gray-600: #4a5568;
+            --gray-700: #2d3748;
+            --gray-800: #1a202c;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--gray-100); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 10px; }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(102, 126, 234, 0.3);
+        }
+        .header h1 { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .header h1 small { font-size: 13px; font-weight: 400; opacity: 0.8; }
+        .header-status { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .status-dot.online { background: var(--success); }
+        .status-dot.offline { background: var(--danger); }
+        .status-dot.waiting { background: var(--warning); }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px 40px; }
+
+        /* STEPS BAR */
+        .steps-bar {
+            display: flex; gap: 0; background: white; border-radius: var(--radius);
+            padding: 8px; margin-bottom: 24px; box-shadow: var(--shadow);
+            overflow-x: auto; flex-wrap: nowrap;
+        }
+        .step-indicator {
+            flex: 1; min-width: 90px; padding: 10px 14px; text-align: center;
+            border-radius: 8px; cursor: pointer; transition: var(--transition);
+            font-size: 12px; font-weight: 500; color: var(--gray-400);
+            background: transparent; border: none; white-space: nowrap;
+        }
+        .step-indicator:hover { background: var(--gray-50); color: var(--gray-600); }
+        .step-indicator.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+        .step-indicator.completed { color: var(--success); }
+        .step-indicator.completed::after { content: ' ✓'; color: var(--success); }
+        .step-indicator .step-num {
+            display: inline-block; width: 22px; height: 22px; line-height: 22px;
+            text-align: center; border-radius: 50%; background: var(--gray-200);
+            color: var(--gray-500); font-size: 11px; font-weight: 700; margin-right: 6px;
+        }
+        .step-indicator.active .step-num { background: rgba(255,255,255,0.2); color: white; }
+        .step-indicator.completed .step-num { background: var(--success); color: white; }
+
+        /* SECTIONS */
+        .step-section { display: none; animation: fadeIn 0.5s ease; }
+        .step-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* CARDS */
+        .card {
+            background: white; border-radius: var(--radius); padding: 24px;
+            margin-bottom: 20px; box-shadow: var(--shadow); transition: var(--transition);
+        }
+        .card:hover { box-shadow: var(--shadow-hover); }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--gray-100);
+        }
+        .card-header h2 { font-size: 18px; font-weight: 600; color: var(--gray-700); }
+        .badge { font-size: 12px; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
+        .badge-success { background: #c6f6d5; color: #22543d; }
+        .badge-warning { background: #fefcbf; color: #975a16; }
+        .badge-danger { background: #fed7d7; color: #9b2c2c; }
+        .badge-info { background: #bee3f8; color: #2a69ac; }
+
+        /* STATS */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px; margin-bottom: 20px;
+        }
+        .stat-item {
+            background: var(--gray-50); padding: 14px 16px; border-radius: 10px;
+            text-align: center; border: 1px solid var(--gray-200);
+        }
+        .stat-item .stat-value {
+            font-size: 24px; font-weight: 700; color: var(--primary); word-break: break-word;
+        }
+        .stat-item .stat-value.success { color: var(--success); }
+        .stat-item .stat-value.warning { color: var(--warning); }
+        .stat-item .stat-value.danger { color: var(--danger); }
+        .stat-item .stat-value.purple { color: var(--purple); }
+        .stat-item .stat-value.orange { color: var(--orange); }
+        .stat-item .stat-label { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+
+        /* PLOTS */
+        .plots-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 18px; margin-top: 16px;
+        }
+        .plot-card {
+            background: var(--gray-50); border-radius: 10px; overflow: hidden;
+            border: 1px solid var(--gray-200); transition: var(--transition);
+        }
+        .plot-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+        .plot-card img { width: 100%; height: auto; display: block; background: white; }
+        .plot-card .plot-label {
+            padding: 10px 16px; font-size: 13px; font-weight: 500;
+            color: var(--gray-600); background: white; border-top: 1px solid var(--gray-200);
+            text-align: center;
+        }
+
+        /* BUTTONS */
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+        .btn {
+            padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-outline:hover { background: var(--primary); color: white; }
+        .btn-purple { background: var(--purple); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* INPUTS */
+        .input-group { display: grid; gap: 12px; margin-bottom: 16px; }
+        .input-group-2 { grid-template-columns: 2fr 1fr auto; }
+        .input-wrapper label {
+            display: block; font-size: 13px; color: var(--gray-500);
+            margin-bottom: 4px; font-weight: 500;
+        }
+        .input-wrapper select, .input-wrapper input {
+            width: 100%; padding: 10px 14px; border: 2px solid var(--gray-200);
+            border-radius: 8px; font-size: 14px; transition: var(--transition);
+        }
+        .input-wrapper select:focus, .input-wrapper input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .input-wrapper .btn { width: 100%; height: 42px; justify-content: center; }
+
+        /* CHAT */
+        .chat-container {
+            background: white; border-radius: var(--radius);
+            border: 1px solid var(--gray-200); overflow: hidden;
+        }
+        .chat-messages {
+            height: 400px; overflow-y: auto; padding: 20px; background: var(--gray-50);
+        }
+        .chat-message {
+            margin-bottom: 16px; padding: 14px 20px; border-radius: 12px;
+            max-width: 85%; animation: fadeIn 0.3s ease;
+        }
+        .chat-message.user {
+            background: var(--primary); color: white; margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-message.assistant {
+            background: white; color: var(--gray-700); border: 1px solid var(--gray-200);
+            margin-right: auto; border-bottom-left-radius: 4px;
+        }
+        .chat-message .message-content { white-space: pre-wrap; line-height: 1.8; }
+        .chat-message.assistant .message-content h3 { color: var(--primary); margin: 12px 0 8px 0; font-size: 15px; }
+        .chat-message.assistant .message-content h2 { color: var(--gray-700); margin: 16px 0 10px 0; font-size: 17px; }
+        .chat-message.assistant .message-content ul { padding-left: 20px; margin: 8px 0; }
+        .chat-input {
+            display: flex; gap: 12px; padding: 16px 20px;
+            background: white; border-top: 1px solid var(--gray-200);
+        }
+        .chat-input input {
+            flex: 1; padding: 12px 16px; border: 2px solid var(--gray-200);
+            border-radius: 8px; font-size: 14px;
+        }
+        .chat-input input:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* TABLES */
+        .report-table {
+            width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px;
+        }
+        .report-table th {
+            background: var(--gray-50); padding: 10px 14px; text-align: left;
+            font-weight: 600; color: var(--gray-600); border-bottom: 2px solid var(--gray-200);
+        }
+        .report-table td {
+            padding: 10px 14px; border-bottom: 1px solid var(--gray-100);
+        }
+        .report-table tr:hover td { background: var(--gray-50); }
+        .report-table .highlight { background: #ebf8ff; }
+        .report-table .highlight td { font-weight: 600; color: var(--primary); }
+
+        /* REPORT SECTIONS */
+        .report-container {
+            background: white; border-radius: var(--radius); padding: 30px;
+            border: 1px solid var(--gray-200);
+        }
+        .report-section { margin-bottom: 24px; }
+        .report-section h3 {
+            color: var(--primary); font-size: 16px; margin-bottom: 12px;
+            padding-bottom: 8px; border-bottom: 1px solid var(--gray-100);
+        }
+
+        /* RESULT BOX */
+        .result-box {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-left: 4px solid var(--primary); border-radius: 10px;
+            padding: 20px; margin-top: 16px;
+        }
+        .result-box.warning {
+            background: linear-gradient(135deg, #fef5e7 0%, #fefcbf 100%);
+            border-left-color: var(--warning);
+        }
+        .result-box.success {
+            background: linear-gradient(135deg, #f0fff4 0%, #d4edda 100%);
+            border-left-color: var(--success);
+        }
+        .result-box.purple {
+            background: linear-gradient(135deg, #faf5ff 0%, #e9d8fd 100%);
+            border-left-color: var(--purple);
+        }
+        .result-box h3 { margin-bottom: 16px; color: var(--primary); }
+
+        /* INFO BLOCK */
+        .info-block {
+            background: white; padding: 14px 18px; border-radius: 10px;
+            margin-bottom: 12px; font-size: 13px; line-height: 1.8;
+        }
+        .info-block strong { color: var(--gray-700); }
+
+        /* EVENT ITEMS */
+        .event-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px; background: var(--gray-50);
+            border-radius: 8px; margin-bottom: 8px;
+            border-left: 3px solid var(--gray-300);
+        }
+        .event-item.freeze { border-left-color: var(--purple); background: #faf5ff; }
+        .event-item.ios { border-left-color: var(--orange); background: #fffaf0; }
+        .event-item .event-icon { font-size: 20px; }
+        .event-item .event-name { flex: 1; font-weight: 500; }
+        .event-item .event-date { font-size: 12px; color: var(--gray-500); }
+
+        /* LOG */
+        .log-container {
+            background: var(--gray-800); color: #a0aec0; padding: 16px 20px;
+            border-radius: 10px; font-family: 'Courier New', monospace;
+            font-size: 13px; max-height: 150px; overflow-y: auto;
+            margin-top: 16px; line-height: 1.8;
+        }
+        .log-container .info { color: #63b3ed; }
+        .log-container .success { color: #68d391; }
+        .log-container .error { color: #fc8181; }
+        .log-container .warning { color: #f6ad55; }
+
+        .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 3px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 14px 20px; flex-direction: column; gap: 10px; }
+            .header h1 { font-size: 17px; }
+            .container { padding: 14px; }
+            .steps-bar { flex-wrap: wrap; }
+            .step-indicator { min-width: 60px; font-size: 10px; padding: 8px 10px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .plots-grid { grid-template-columns: 1fr; }
+            .chat-message { max-width: 95%; }
+            .input-group-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <h1>📊 ASO Analytics <small>Sound Amplifier v4.1</small></h1>
+    <div class="header-status">
+        <span id="llmStatus"><span class="status-dot waiting" id="llmDot"></span><span id="llmLabel">LLM: проверка...</span></span>
+        <span id="dataStatus"><span class="status-dot waiting" id="dataDot"></span><span id="dataLabel">Данные: не загружены</span></span>
+    </div>
+</header>
+
+<div class="container">
+
+    <div class="steps-bar" id="stepsBar">
+        <button class="step-indicator active" data-step="0" onclick="goToStep(0)"><span class="step-num">🏠</span> Главная</button>
+        <button class="step-indicator" data-step="1" onclick="goToStep(1)"><span class="step-num">1</span> Загрузка</button>
+        <button class="step-indicator" data-step="2" onclick="goToStep(2)"><span class="step-num">2</span> EDA</button>
+        <button class="step-indicator" data-step="3" onclick="goToStep(3)"><span class="step-num">3</span> Мотив</button>
+        <button class="step-indicator" data-step="4" onclick="goToStep(4)"><span class="step-num">4</span> ML</button>
+        <button class="step-indicator" data-step="5" onclick="goToStep(5)"><span class="step-num">5</span> Тесты</button>
+        <button class="step-indicator" data-step="6" onclick="goToStep(6)"><span class="step-num">6</span> Отчёт</button>
+        <button class="step-indicator" data-step="7" onclick="goToStep(7)"><span class="step-num">💬</span> Чат</button>
+    </div>
+
+    <!-- STEP 0 -->
+    <div class="step-section active" id="step0">
+        <div class="card">
+            <div class="card-header"><h2>🏠 ASO Analytics Service v4.1</h2></div>
+            <p style="color: var(--gray-500); margin-bottom: 20px;">
+                Сервис для анализа ASO данных приложения Sound Amplifier.
+                Прогноз на 1 день, учёт фризов и iOS обновлений.
+            </p>
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="runAllSteps()">▶️ Выполнить все этапы</button>
+                <button class="btn btn-danger" onclick="resetAll()">🔄 Сбросить всё</button>
+            </div>
+            <div class="stats-grid" id="mainStats">
+                <div class="stat-item"><div class="stat-value" id="mainRecords">0</div><div class="stat-label">Всего записей</div></div>
+                <div class="stat-item"><div class="stat-value" id="mainKeywords">0</div><div class="stat-label">Ключевых слов</div></div>
+                <div class="stat-item"><div class="stat-value" id="mainFeatures">0</div><div class="stat-label">Признаков</div></div>
+                <div class="stat-item"><div class="stat-value" id="mainPlots">0</div><div class="stat-label">Графиков</div></div>
+                <div class="stat-item"><div class="stat-value purple" id="mainFreezes">0</div><div class="stat-label">Периодов фризов</div></div>
+                <div class="stat-item"><div class="stat-value orange" id="mainIOS">0</div><div class="stat-label">iOS обновлений</div></div>
+            </div>
+        </div>
+        <div class="log-container" id="log">
+            <div class="info">🔹 Сервис готов к работе.</div>
+        </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step-section" id="step1">
+        <div class="card">
+            <div class="card-header">
+                <h2>📁 Шаг 1: Загрузка и предобработка данных</h2>
+                <span class="badge badge-info" id="step1Status">Ожидание</span>
+            </div>
+            <p style="color: var(--gray-500); margin-bottom: 16px;">Загрузка Excel файлов с признаками фризов и iOS обновлений</p>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnStep1" onclick="runStep(1)">📥 Загрузить данные</button>
+            </div>
+            <div class="stats-grid" id="step1Stats">
+                <div class="stat-item"><div class="stat-value" id="s1Records">-</div><div class="stat-label">Записей</div></div>
+                <div class="stat-item"><div class="stat-value" id="s1Keywords">-</div><div class="stat-label">Ключей</div></div>
+                <div class="stat-item"><div class="stat-value" id="s1Features">-</div><div class="stat-label">Признаков</div></div>
+                <div class="stat-item"><div class="stat-value" id="s1Period">-</div><div class="stat-label">Период</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-section" id="step2">
+        <div class="card">
+            <div class="card-header">
+                <h2>📊 Шаг 2: Разведочный анализ (EDA)</h2>
+                <span class="badge badge-info" id="step2Status">Ожидание</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnStep2" onclick="runStep(2)">🔍 Выполнить EDA</button>
+            </div>
+            <div class="stats-grid" id="step2Stats">
+                <div class="stat-item"><div class="stat-value" id="s2Total">-</div><div class="stat-label">Всего записей</div></div>
+                <div class="stat-item"><div class="stat-value" id="s2Unique">-</div><div class="stat-label">Ключей</div></div>
+                <div class="stat-item"><div class="stat-value" id="s2AvgPos">-</div><div class="stat-label">Средняя позиция</div></div>
+                <div class="stat-item"><div class="stat-value" id="s2AvgMotiv">-</div><div class="stat-label">Средний мотив</div></div>
+            </div>
+            <div id="step2Plots" class="plots-grid"></div>
+        </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-section" id="step3">
+        <div class="card">
+            <div class="card-header">
+                <h2>🎯 Шаг 3: Расчёт требуемого мотива</h2>
+                <span class="badge badge-info" id="step3Status">Ожидание</span>
+            </div>
+            <p style="color: var(--gray-500); margin-bottom: 16px;">Выберите ключевое слово и целевую позицию — система рассчитает требуемый мотив.</p>
+            <div class="input-group input-group-2">
+                <div class="input-wrapper">
+                    <label>Ключевое слово</label>
+                    <select id="motivKeywordSelect"><option value="">-- Выберите ключ --</option></select>
+                </div>
+                <div class="input-wrapper">
+                    <label>Целевая позиция (1-250)</label>
+                    <input type="number" id="motivTargetPosition" value="10" min="1" max="250">
+                </div>
+                <div class="input-wrapper">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary" onclick="calculateMotiv()">📊 Рассчитать</button>
+                </div>
+            </div>
+            <div id="motivResult"></div>
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn btn-outline" onclick="loadKeywordsList()">🔄 Обновить список</button>
+                <button class="btn btn-outline" onclick="loadMotivEfficiency()">📈 Эффективность мотива</button>
+            </div>
+            <div id="motivEfficiencyTable" style="margin-top: 16px;"></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h2>🔬 Проверка гипотез для ключевого слова</h2></div>
+            <p style="color: var(--gray-500); margin-bottom: 16px;">AI-ассистент проверит гипотезы для выбранного ключа и предложит новые.</p>
+            <div class="btn-group">
+                <button class="btn btn-warning" onclick="checkKeywordHypothesis()">🔍 Проверить гипотезы (LLM)</button>
+                <button class="btn btn-purple" onclick="predictFreezeImpact()">❄️ Прогноз влияния фриза</button>
+            </div>
+            <div id="hypothesisResult"></div>
+        </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-section" id="step4">
+        <div class="card">
+            <div class="card-header">
+                <h2>🤖 Шаг 4: ML моделирование (прогноз на 1 день)</h2>
+                <span class="badge badge-info" id="step4Status">Ожидание</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnStep4" onclick="runStep(4)">🧠 Обучить модели</button>
+            </div>
+            <div class="stats-grid" id="step4Stats">
+                <div class="stat-item"><div class="stat-value" id="s4BestModel">-</div><div class="stat-label">Лучшая модель</div></div>
+                <div class="stat-item"><div class="stat-value" id="s4MAE">-</div><div class="stat-label">MAE</div></div>
+                <div class="stat-item"><div class="stat-value" id="s4R2">-</div><div class="stat-label">R²</div></div>
+                <div class="stat-item"><div class="stat-value" id="s4RMSE">-</div><div class="stat-label">RMSE</div></div>
+            </div>
+            <div id="step4Plots" class="plots-grid"></div>
+        </div>
+    </div>
+
+    <!-- STEP 5: ТЕСТЫ + ТАБЛИЦЫ -->
+    <div class="step-section" id="step5">
+        <div class="card">
+            <div class="card-header">
+                <h2>📐 Шаг 5: Статистические тесты (H1-H8)</h2>
+                <span class="badge badge-info" id="step5Status">Ожидание</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnStep5" onclick="runStep(5)">📊 Запустить тесты</button>
+            </div>
+            <div class="stats-grid" id="step5Stats">
+                <div class="stat-item"><div class="stat-value" id="s5Total">-</div><div class="stat-label">Всего гипотез</div></div>
+                <div class="stat-item"><div class="stat-value success" id="s5Confirmed">-</div><div class="stat-label">Подтверждено</div></div>
+                <div class="stat-item"><div class="stat-value danger" id="s5Rejected">-</div><div class="stat-label">Отклонено</div></div>
+                <div class="stat-item"><div class="stat-value" id="s5Rate">-</div><div class="stat-label">Процент</div></div>
+            </div>
+            
+            <!-- 🆕 Таблица гипотез с критериями -->
+            <div id="step5HypothesesTable" style="margin-top: 20px;"></div>
+            
+            <div id="step5Plots" class="plots-grid"></div>
+        </div>
+    </div>
+
+    <!-- STEP 6: ОТЧЁТ + ТАБЛИЦЫ -->
+    <div class="step-section" id="step6">
+        <div class="card">
+            <div class="card-header">
+                <h2>📄 Шаг 6: Итоговый отчёт и проверка правил</h2>
+                <span class="badge badge-info" id="step6Status">Ожидание</span>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnStep6" onclick="runStep(6)">📋 Сгенерировать отчёт</button>
+                <button class="btn btn-success" onclick="exportReport()">📥 Экспорт отчёта</button>
+            </div>
+            
+            <!-- 🆕 Таблица правил с критериями -->
+            <div id="step6RulesTable" style="margin-top: 20px;"></div>
+            
+            <!-- 🆕 Таблица гипотез -->
+            <div id="step6HypothesesTable" style="margin-top: 20px;"></div>
+            
+            <div id="reportContainer" class="report-container" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step-section" id="step7">
+        <div class="card">
+            <div class="card-header">
+                <h2>💬 Шаг 7: AI-ассистент (LLM)</h2>
+                <span class="badge badge-info" id="step7Status">Ожидание</span>
+            </div>
+            <p style="color: var(--gray-500); margin-bottom: 16px;">AI-ассистент, обученный на ASO методологии с учётом фризов и iOS обновлений.</p>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message assistant">
+                        <div class="message-content">👋 Здравствуйте! Я AI-ассистент по ASO аналитике v4.1.
+
+Я знаю:
+• Методологию ASO (правила R1-R14)
+• Календарь фризов и iOS обновлений
+• Формулы расчёта мотива и эффективности
+• Все данные вашего приложения
+
+Задайте любой вопрос или используйте быстрые кнопки ниже.</div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Задайте вопрос..." onkeypress="if(event.key==='Enter') sendChat()">
+                    <button class="btn btn-primary" onclick="sendChat()">Отправить</button>
+                    <button class="btn btn-outline btn-sm" onclick="clearChat()">Очистить</button>
+                </div>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-sm btn-outline" onclick="quickQuestion('Какие ключевые слова имеют наибольший потенциал?')">🔥 Потенциал</button>
+                <button class="btn btn-sm btn-outline" onclick="quickQuestion('Объясни правила R13 и R14')">📋 R13-R14</button>
+                <button class="btn btn-sm btn-outline" onclick="quickQuestion('Как планировать продвижение с учётом фризов?')">❄️ Планирование</button>
+                <button class="btn btn-sm btn-outline" onclick="quickQuestion('Что такое эффективность мотива?')">📈 Эффективность</button>
+                <button class="btn btn-sm btn-outline" onclick="generateNewHypotheses()">🆕 Новые гипотезы</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h2>📅 Календарь событий</h2>
+                <button class="btn btn-sm btn-outline" onclick="loadEventsCalendar()">🔄 Обновить</button>
+            </div>
+            <div id="eventsCalendar"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const STATE = { step: 0, completed: [false, false, false, false, false, false, false, false] };
+    const API_BASE = '/api';
+    
+    const PLOTS_PATTERNS = {
+        2: ['eda_overview', 'correlation_heatmap', 'timeseries_top5', 'monthly_analysis',
+            'motiv_distribution', 'position_distribution', 'top20_keywords',
+            'motiv_vs_position', 'freeze_and_updates'],
+        3: ['motiv_efficiency'],
+        4: ['model_comparison_1day', 'feature_importance_1day', 'predictions_vs_actual_1day',
+            'events_importance'],
+        5: ['hypotheses_1day'],
+        6: ['rules_1day']
+    };
+
+    function log(msg, type = 'info') {
+        const el = document.getElementById('log');
+        el.innerHTML += `<div class="${type}">${msg}</div>`;
+        el.scrollTop = el.scrollHeight;
+    }
+
+    async function fetchAPI(endpoint, method = 'POST', body = null) {
+        try {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = JSON.stringify(body);
+            const resp = await fetch(`${API_BASE}${endpoint}`, opts);
+            const contentType = resp.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await resp.text();
+                throw new Error(`Сервер вернул не JSON: ${text.substring(0, 100)}`);
+            }
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+            return data;
+        } catch (e) {
+            log(`❌ Ошибка: ${e.message}`, 'error');
+            throw e;
+        }
+    }
+
+    function goToStep(step) {
+        STATE.step = step;
+        document.querySelectorAll('.step-section').forEach((el, i) => el.classList.toggle('active', i === step));
+        document.querySelectorAll('.step-indicator').forEach((el, i) => el.classList.toggle('active', i === step));
+        updateStepStatuses();
+        if (step === 3) loadKeywordsList();
+        if (step === 7) loadEventsCalendar();
+    }
+
+    function updateStepStatuses() {
+        for (let i = 1; i <= 6; i++) {
+            const el = document.querySelector(`.step-indicator[data-step="${i}"]`);
+            if (el) el.classList.toggle('completed', STATE.completed[i]);
+        }
+    }
+
+    async function updateStatus() {
+        try {
+            const status = await fetchAPI('/status', 'GET');
+            const dataDot = document.getElementById('dataDot');
+            const dataLabel = document.getElementById('dataLabel');
+            if (status.data_loaded) {
+                dataDot.className = 'status-dot online';
+                dataLabel.textContent = `Данные: ${status.records} записей`;
+            } else {
+                dataDot.className = 'status-dot waiting';
+                dataLabel.textContent = 'Данные: не загружены';
+            }
+            const llmDot = document.getElementById('llmDot');
+            const llmLabel = document.getElementById('llmLabel');
+            if (status.llm_available) {
+                llmDot.className = 'status-dot online';
+                llmLabel.textContent = 'LLM: доступен';
+            } else {
+                llmDot.className = 'status-dot offline';
+                llmLabel.textContent = 'LLM: недоступен';
+            }
+            document.getElementById('mainRecords').textContent = status.records || 0;
+            document.getElementById('mainKeywords').textContent = status.keywords || 0;
+            
+            const info = await fetchAPI('/info', 'GET');
+            document.getElementById('mainFeatures').textContent = info.features_count || 0;
+
+            const plots = await fetchAPI('/eda/plots', 'GET');
+            document.getElementById('mainPlots').textContent = plots.plots ? plots.plots.length : 0;
+
+            // Загружаем справочники для подсчёта событий
+            try {
+                const freezes = await fetchAPI('/events/freezes', 'GET');
+                document.getElementById('mainFreezes').textContent = freezes.freezes ? freezes.freezes.length : 0;
+                const ios = await fetchAPI('/events/ios_updates', 'GET');
+                document.getElementById('mainIOS').textContent = ios.updates ? ios.updates.length : 0;
+            } catch(e) {}
+
+            STATE.completed = [
+                false, status.data_loaded, status.eda_completed,
+                false, status.ml_completed, status.tests_completed, status.report_generated, false
+            ];
+            updateStepStatuses();
+        } catch (e) {}
+    }
+
+    async function runStep(step) {
+        const btn = document.getElementById(`btnStep${step}`);
+        const statusEl = document.getElementById(`step${step}Status`);
+        
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Выполняется...'; }
+        if (statusEl) { statusEl.textContent = '⏳ Выполняется...'; statusEl.className = 'badge badge-warning'; }
+
+        const endpoints = {
+            1: { path: '/data/load', name: 'Загрузка данных' },
+            2: { path: '/eda/run', name: 'EDA' },
+            3: { path: '/motiv/efficiency', name: 'Эффективность мотива', method: 'GET' },
+            4: { path: '/ml/train', name: 'ML обучение' },
+            5: { path: '/tests/run', name: 'Статистические тесты' },
+            6: { path: '/report/generate', name: 'Генерация отчёта' }
+        };
+
+        const ep = endpoints[step];
+        if (!ep) return;
+
+        try {
+            log(`🔄 ${ep.name}...`, 'info');
+            const result = await fetchAPI(ep.path, ep.method || 'POST');
+            STATE.completed[step] = true;
+            updateStepStatuses();
+            if (statusEl) { statusEl.textContent = '✅ Завершён'; statusEl.className = 'badge badge-success'; }
+            log(`✅ ${ep.name} завершён!`, 'success');
+            await updateStepStats(step);
+            await loadStepPlots(step);
+            await updateStatus();
+        } catch (e) {
+            if (statusEl) { statusEl.textContent = '❌ Ошибка'; statusEl.className = 'badge badge-danger'; }
+        }
+        if (btn) { btn.disabled = false; btn.innerHTML = '✅ Готово'; }
+    }
+
+    async function updateStepStats(step) {
+        try {
+            if (step === 1) {
+                const status = await fetchAPI('/data/status', 'GET');
+                document.getElementById('s1Records').textContent = status.records || '-';
+                document.getElementById('s1Keywords').textContent = status.keywords || '-';
+                const info = await fetchAPI('/info', 'GET');
+                document.getElementById('s1Features').textContent = info.features_count || '-';
+                document.getElementById('s1Period').textContent = status.period_start ? `${status.period_start} - ${status.period_end}` : '-';
+            }
+            if (step === 2) {
+                const summary = await fetchAPI('/eda/summary', 'GET');
+                if (summary) {
+                    document.getElementById('s2Total').textContent = summary.total_records || '-';
+                    document.getElementById('s2Unique').textContent = summary.unique_keywords || '-';
+                    document.getElementById('s2AvgPos').textContent = summary.avg_position ? summary.avg_position.toFixed(2) : '-';
+                    document.getElementById('s2AvgMotiv').textContent = summary.avg_motiv ? summary.avg_motiv.toFixed(2) : '-';
+                }
+            }
+            if (step === 4) {
+                const results = await fetchAPI('/ml/results', 'GET');
+                if (results && results.results && results.results.length > 0) {
+                    const best = results.results.reduce((a, b) => a.MAE < b.MAE ? a : b);
+                    document.getElementById('s4BestModel').textContent = best.Model || '-';
+                    document.getElementById('s4MAE').textContent = best.MAE ? best.MAE.toFixed(4) : '-';
+                    document.getElementById('s4R2').textContent = best.R2 ? best.R2.toFixed(4) : '-';
+                    document.getElementById('s4RMSE').textContent = best.RMSE ? best.RMSE.toFixed(4) : '-';
+                }
+            }
+            if (step === 5) {
+                const tests = await fetchAPI('/tests/results', 'GET');
+                if (tests && tests.hypotheses && tests.hypotheses.length > 0) {
+                    renderHypothesesTable(tests.hypotheses, 'step5HypothesesTable', true);
+                }
+            }
+            if (step === 6) {
+                // Правила
+                const rules = await fetchAPI('/report', 'GET');
+                if (rules && rules.rules_results && rules.rules_results.details) {
+                    renderRulesTable(rules.rules_results.details, 'step6RulesTable');
+                }
+                if (rules && rules.hypothesis_results && rules.hypothesis_results.details) {
+                    renderHypothesesTable(rules.hypothesis_results.details, 'step6HypothesesTable', false);
+                }
+                if (rules && rules.executive_summary) {
+                    document.getElementById('step6Status').textContent = '✅ Отчёт готов';
+                    document.getElementById('step6Status').className = 'badge badge-success';
+                    showReport(rules);
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // 🆕 Рендер таблицы гипотез с критериями
+    function renderHypothesesTable(hypotheses, containerId, updateSummary) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        let html = '<h3 style="margin-bottom: 12px;">📐 Гипотезы: критерии проверки</h3>';
+        html += '<table class="report-table"><thead><tr>';
+        html += '<th>Гипотеза</th><th>Метрика</th><th>p-value</th><th>Критерий</th><th>Результат</th>';
+        html += '</tr></thead><tbody>';
+
+        let confirmed = 0;
+        let rejected = 0;
+
+        const criteria = {
+            'H1': 'Корреляция позиций > 0.7',
+            'H2': 'Различия между сценариями (Kruskal-Wallis)',
+            'H3': 'Разный эффект сценариев (p < 0.05)',
+            'H4': 'Влияние фризов (Mann-Whitney)',
+            'H5': 'Корреляция мотива и Δ позиции (p < 0.05)',
+            'H6': 'Средняя эффективность > 0 (t-test)',
+            'H7': 'Фризы дают разный Δ позиции',
+            'H8': 'iOS неделя даёт разный Δ позиции'
+        };
+
+        for (const h of hypotheses) {
+            const result = String(h['Результат'] || '—');
+            const isAccepted = result.includes('✅');
+            const hypoName = String(h['Гипотеза'] || '');
+            const hId = hypoName.split(':')[0];
+            const criteriaText = criteria[hId] || '—';
+
+            if (isAccepted) confirmed++;
+            else if (result.includes('❌')) rejected++;
+
+            html += `<tr class="${isAccepted ? 'highlight' : ''}">`;
+            html += `<td><strong>${hypoName}</strong></td>`;
+            html += `<td>${h['Метрика'] || '—'}</td>`;
+            html += `<td>${h['p-value'] || '—'}</td>`;
+            html += `<td style="font-size: 12px; color: var(--gray-500);">${criteriaText}</td>`;
+            html += `<td style="font-weight: 600; color: ${isAccepted ? 'var(--success)' : 'var(--danger)'};">${result}</td>`;
+            html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+
+        if (updateSummary) {
+            document.getElementById('s5Total').textContent = hypotheses.length;
+            document.getElementById('s5Confirmed').textContent = confirmed;
+            document.getElementById('s5Rejected').textContent = rejected;
+            const pct = hypotheses.length > 0 ? (confirmed / hypotheses.length * 100).toFixed(1) : 0;
+            document.getElementById('s5Rate').textContent = `${pct}%`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    // 🆕 Рендер таблицы правил с критериями
+    function renderRulesTable(rules, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        let html = '<h3 style="margin-bottom: 12px;">📋 Правила: критерии проверки</h3>';
+        html += '<table class="report-table"><thead><tr>';
+        html += '<th>Правило</th><th>Название</th><th>Критерий проверки</th><th>Результат</th>';
+        html += '</tr></thead><tbody>';
+
+        const criteria = {
+            'R1': 'После 2 дней мотива и пропуска позиция улучшается',
+            'R2': 'Мотив > 0 даёт отрицательное изменение позиции',
+            'R3': 'При сильном росте мотив увеличивается',
+            'R4': 'При падении мотив снижается до 0',
+            'R5': 'Мотив ≤ 2 для новых запросов',
+            'R6': 'Позиция стремится к целевой',
+            'R7': 'Эффективность циклов с мотивом 2',
+            'R8': 'Мотив 3 даёт улучшение',
+            'R9': 'Мотив растёт по правилу (15%/10%)',
+            'R10': 'Откат -30% даёт восстановление',
+            'R11': 'Поддержка удерживает позицию',
+            'R12': 'Мотив ≤ 30% от трафика',
+            'R13': 'Во время фризов мотив не работает',
+            'R14': 'Неделя после iOS даёт лучший результат'
+        };
+
+        for (const r of rules) {
+            const status = String(r['Результат'] || r['Статус'] || '—');
+            const isAccepted = status.includes('✅');
+            const ruleId = String(r['Правило'] || r['Rule'] || '');
+            const criteriaText = criteria[ruleId] || '—';
+
+            html += `<tr class="${isAccepted ? 'highlight' : ''}">`;
+            html += `<td><strong>${ruleId}</strong></td>`;
+            html += `<td>${r['Название'] || '—'}</td>`;
+            html += `<td style="font-size: 12px; color: var(--gray-500);">${criteriaText}</td>`;
+            html += `<td style="font-weight: 600; color: ${isAccepted ? 'var(--success)' : 'var(--danger)'};">${status}</td>`;
+            html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    async function loadStepPlots(step) {
+        const container = document.getElementById(`step${step}Plots`);
+        if (!container) return;
+        const patterns = PLOTS_PATTERNS[step];
+        if (!patterns) return;
+        try {
+            const plots = await fetchAPI('/eda/plots', 'GET');
+            if (!plots || !plots.plots) return;
+            const matched = plots.plots.filter(p => patterns.some(pattern => p.name.includes(pattern)));
+            if (matched.length === 0) {
+                container.innerHTML = '<div style="color: var(--gray-400); text-align: center; padding: 30px;">Нет графиков для этого шага</div>';
+                return;
+            }
+            container.innerHTML = matched.map(p => `
+                <div class="plot-card">
+                    <img src="${p.url}" alt="${p.name}" loading="lazy">
+                    <div class="plot-label">${p.name.replace('.png', '').replace(/_/g, ' ')}</div>
+                </div>
+            `).join('');
+        } catch (e) {}
+    }
+
+    async function runAllSteps() {
+        log('▶️ Запуск всех этапов...', 'info');
+        for (let step = 1; step <= 6; step++) {
+            await runStep(step);
+            await new Promise(r => setTimeout(r, 500));
+        }
+        log('🎉 Все этапы выполнены!', 'success');
+        goToStep(6);
+    }
+
+    async function resetAll() {
+        if (!confirm('Сбросить все данные и состояние?')) return;
+        try {
+            await fetchAPI('/data/reset', 'POST');
+            STATE.completed = [false, false, false, false, false, false, false, false];
+            updateStepStatuses();
+            document.querySelectorAll('.step-section .stats-grid').forEach(el => {
+                el.querySelectorAll('.stat-value').forEach(v => v.textContent = '-');
+            });
+            document.querySelectorAll('.step-section .plots-grid').forEach(el => el.innerHTML = '');
+            document.getElementById('reportContainer').style.display = 'none';
+            document.getElementById('log').innerHTML = '<div class="info">🔹 Состояние сброшено.</div>';
+            await updateStatus();
+            goToStep(0);
+        } catch (e) {}
+    }
+
+    async function loadKeywordsList() {
+        try {
+            const resp = await fetchAPI('/motiv/keywords', 'GET');
+            const select = document.getElementById('motivKeywordSelect');
+            select.innerHTML = '<option value="">-- Выберите ключ --</option>' +
+                resp.keywords.map(k => `<option value="${k}">${k}</option>`).join('');
+        } catch (e) {}
+    }
+
+    async function calculateMotiv() {
+        const keyword = document.getElementById('motivKeywordSelect').value;
+        const targetPosition = parseInt(document.getElementById('motivTargetPosition').value);
+        if (!keyword) { alert('Выберите ключевое слово'); return; }
+        const resultDiv = document.getElementById('motivResult');
+        resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="spinner"></span> Расчёт...</div>';
+        try {
+            const resp = await fetchAPI('/motiv/calculate', 'POST', { keyword, target_position: targetPosition });
+            const confColors = { 'high': 'success', 'medium': 'warning', 'low': 'danger' };
+            resultDiv.innerHTML = `
+                <div class="result-box success">
+                    <h3>📊 Результат для "${resp.keyword}"</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item"><div class="stat-value">${resp.current_position}</div><div class="stat-label">Текущая позиция</div></div>
+                        <div class="stat-item"><div class="stat-value">${resp.target_position}</div><div class="stat-label">Целевая позиция</div></div>
+                        <div class="stat-item"><div class="stat-value warning">${resp.required_motiv_int}</div><div class="stat-label">Требуемый мотив</div></div>
+                        <div class="stat-item"><div class="stat-value success">${resp.predicted_position_1d}</div><div class="stat-label">Прогноз 1 день</div></div>
+                        <div class="stat-item"><div class="stat-value">${resp.predicted_position_7d}</div><div class="stat-label">Прогноз 7 дней</div></div>
+                        <div class="stat-item"><div class="stat-value ${confColors[resp.confidence] || ''}">${resp.confidence}</div><div class="stat-label">Уверенность</div></div>
+                    </div>
+                    <div class="info-block"><strong>💡 Рекомендация:</strong> ${resp.recommendation}</div>
+                    <div class="info-block">
+                        <strong>Эффективность мотива:</strong> ${resp.efficiency} позиций за 1 ед.<br>
+                        <strong>Корреляция:</strong> ${resp.correlation}<br>
+                        <strong>Разница позиций:</strong> ${resp.position_diff}<br>
+                        <strong>Записей в анализе:</strong> ${resp.n_records}
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            resultDiv.innerHTML = `<div class="result-box warning">❌ Ошибка: ${e.message}</div>`;
+        }
+    }
+
+    async function loadMotivEfficiency() {
+        const container = document.getElementById('motivEfficiencyTable');
+        container.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="spinner"></span> Загрузка...</div>';
+        try {
+            const resp = await fetchAPI('/motiv/efficiency', 'GET');
+            if (!resp.efficiency || resp.efficiency.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--gray-400); padding: 20px;">Нет данных</div>';
+                return;
+            }
+            let html = '<h3 style="margin-bottom: 12px;">📈 Эффективность мотива (топ-20)</h3>';
+            html += '<table class="report-table"><tr><th>Ключ</th><th>Эффект.</th><th>Ср.мотив</th><th>Корреляция</th></tr>';
+            for (const row of resp.efficiency.slice(0, 20)) {
+                const eff = row.efficiency;
+                const color = eff > 1 ? 'success' : eff > 0.3 ? 'warning' : 'danger';
+                html += `<tr><td>${row.keyword}</td><td class="${color}"><strong>${eff.toFixed(3)}</strong></td><td>${row.avg_motiv}</td><td>${row.correlation}</td></tr>`;
+            }
+            html += '</table>';
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `<div class="result-box warning">❌ Ошибка: ${e.message}</div>`;
+        }
+    }
+
+    async function checkKeywordHypothesis() {
+        const keyword = document.getElementById('motivKeywordSelect').value;
+        const targetPosition = parseInt(document.getElementById('motivTargetPosition').value);
+        if (!keyword) { alert('Выберите ключевое слово'); return; }
+        const container = document.getElementById('hypothesisResult');
+        container.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="spinner"></span> AI анализирует...</div>';
+        try {
+            const resp = await fetchAPI('/llm/check_keyword_hypothesis', 'POST', { keyword, target_position: targetPosition });
+            let content = resp.response || 'Нет ответа';
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>');
+            content = content.replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>');
+            content = content.replace(/\n/g, '<br>');
+            container.innerHTML = `<div class="result-box warning"><h3>🔬 Гипотезы для "${keyword}"</h3><div style="line-height: 1.8;">${content}</div></div>`;
+        } catch (e) {
+            container.innerHTML = `<div class="result-box warning">❌ Ошибка: ${e.message}</div>`;
+        }
+    }
+
+    async function predictFreezeImpact() {
+        const keyword = document.getElementById('motivKeywordSelect').value;
+        const targetPosition = parseInt(document.getElementById('motivTargetPosition').value);
+        if (!keyword) { alert('Выберите ключевое слово'); return; }
+        const container = document.getElementById('hypothesisResult');
+        container.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="spinner"></span> Анализ фризов...</div>';
+        try {
+            const resp = await fetchAPI('/events/predict_freeze_impact', 'POST', { keyword, target_position: targetPosition });
+            container.innerHTML = `
+                <div class="result-box purple">
+                    <h3>❄️ Прогноз влияния фриза для "${keyword}"</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item"><div class="stat-value purple">${resp.n_freeze_records || 0}</div><div class="stat-label">Записей во фризах</div></div>
+                        <div class="stat-item"><div class="stat-value">${(resp.avg_delta_in_freeze || 0).toFixed(3)}</div><div class="stat-label">Δ позиции во фризе</div></div>
+                        <div class="stat-item"><div class="stat-value">${(resp.avg_delta_out_freeze || 0).toFixed(3)}</div><div class="stat-label">Δ позиции вне фриза</div></div>
+                    </div>
+                    <div class="info-block"><strong>💡 Рекомендация:</strong> ${resp.recommendation || 'Нет данных'}</div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = `<div class="result-box warning">❌ Ошибка: ${e.message}</div>`;
+        }
+    }
+
+    function showReport(report) {
+        const container = document.getElementById('reportContainer');
+        container.style.display = 'block';
+
+        const s = report.executive_summary || {};
+        const ml = report.ml_results || {};
+        const ev = report.events_summary || {};
+        const recs = report.recommendations || {};
+
+        let html = '<h2>📋 ИТОГОВЫЙ ОТЧЁТ (прогноз на 1 день)</h2>';
+        
+        // Общая статистика
+        html += '<div class="report-section"><h3>📊 Общая статистика</h3>';
+        html += '<table class="report-table">';
+        html += `<tr><td>Всего записей</td><td><strong>${s.total_records?.toLocaleString() || '-'}</strong></td></tr>`;
+        html += `<tr><td>Уникальных ключей</td><td><strong>${s.total_keywords || '-'}</strong></td></tr>`;
+        html += `<tr><td>Всего признаков</td><td><strong>${s.total_features || '-'}</strong></td></tr>`;
+        html += `<tr><td>Период</td><td>${s.period || '-'}</td></tr>`;
+        html += `<tr><td>Средняя позиция</td><td>${s.avg_position ? s.avg_position.toFixed(2) : '-'}</td></tr>`;
+        html += `<tr><td>Средний мотив</td><td>${s.avg_motiv ? s.avg_motiv.toFixed(2) : '-'}</td></tr>`;
+        html += `<tr><td>Ср. эффективность мотива</td><td><strong>${s.avg_efficiency ? s.avg_efficiency.toFixed(3) : '-'}</strong></td></tr>`;
+        html += '</table></div>';
+
+        // События
+        html += '<div class="report-section"><h3>❄️📱 События</h3>';
+        html += '<table class="report-table">';
+        html += `<tr><td>Периодов фризов</td><td><strong>${s.n_freezes || ev.n_freezes || 0}</strong></td></tr>`;
+        html += `<tr><td>Записей в фризах</td><td>${(s.n_freeze_records || ev.n_freeze_records || 0).toLocaleString()}</td></tr>`;
+        html += `<tr><td>iOS обновлений</td><td><strong>${s.n_ios_updates || ev.n_ios_updates || 0}</strong></td></tr>`;
+        html += `<tr><td>Записей в неделю после iOS</td><td>${(s.n_week_after_ios || ev.n_week_after_ios || 0).toLocaleString()}</td></tr>`;
+        html += '</table></div>';
+
+        // ML
+        html += '<div class="report-section"><h3>🤖 Результаты ML</h3>';
+        html += `<p><strong>Лучшая модель:</strong> ${s.best_model || '-'}</p>`;
+        html += `<p><strong>MAE:</strong> ${s.best_model_mae || '-'}</p>`;
+        html += `<p><strong>R²:</strong> ${s.best_model_r2 || '-'}</p>`;
+        html += '</div>';
+
+        // Гипотезы и правила
+        html += '<div class="report-section"><h3>📐 Гипотезы и правила</h3>';
+        html += `<p><strong>Гипотез подтверждено:</strong> ${s.hypotheses_confirmed || 0}/${s.hypotheses_total || 0}</p>`;
+        html += `<p><strong>Правил подтверждено:</strong> ${s.rules_confirmed || 0}/${s.rules_total || 0}</p>`;
+        html += '</div>';
+
+        // Рекомендации
+        html += '<div class="report-section"><h3>🎯 Рекомендации</h3>';
+        
+        if (recs.critical && recs.critical.length > 0) {
+            html += '<h4 style="color: var(--danger); margin: 12px 0 8px 0;">🔴 КРИТИЧЕСКИЕ</h4><ul>';
+            recs.critical.forEach(r => {
+                const text = typeof r === 'string' ? r : (r.title || JSON.stringify(r));
+                html += `<li>${text}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        if (recs.important && recs.important.length > 0) {
+            html += '<h4 style="color: var(--warning); margin: 12px 0 8px 0;">🟡 ВАЖНЫЕ</h4><ul>';
+            recs.important.forEach(r => {
+                const text = typeof r === 'string' ? r : (r.title || JSON.stringify(r));
+                html += `<li>${text}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        if (recs.recommended && recs.recommended.length > 0) {
+            html += '<h4 style="color: var(--success); margin: 12px 0 8px 0;">🟢 РЕКОМЕНДУЕМЫЕ</h4><ul>';
+            recs.recommended.forEach(r => {
+                const text = typeof r === 'string' ? r : (r.title || JSON.stringify(r));
+                html += `<li>${text}</li>`;
+            });
+            html += '</ul>';
+        }
+        
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    async function exportReport() {
+        try {
+            const report = await fetchAPI('/report', 'GET');
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `aso_report_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        } catch (e) {}
+    }
+
+    async function sendChat() {
+        const input = document.getElementById('chatInput');
+        const msg = input.value.trim();
+        if (!msg) return;
+        const container = document.getElementById('chatMessages');
+        container.innerHTML += `<div class="chat-message user">${msg}</div>`;
+        input.value = '';
+        container.scrollTop = container.scrollHeight;
+        try {
+            const response = await fetchAPI('/llm/chat', 'POST', { message: msg });
+            let content = response.response || 'Нет ответа';
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>');
+            content = content.replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>');
+            content = content.replace(/^- (.*?)$/gm, '<li>$1</li>');
+            content = content.replace(/\n/g, '<br>');
+            container.innerHTML += `<div class="chat-message assistant"><div class="message-content">${content}</div></div>`;
+            container.scrollTop = container.scrollHeight;
+        } catch (e) {}
+    }
+
+    function clearChat() {
+        document.getElementById('chatMessages').innerHTML = `<div class="chat-message assistant"><div class="message-content">👋 Чат очищен.</div></div>`;
+    }
+
+    function quickQuestion(q) {
+        document.getElementById('chatInput').value = q;
+        sendChat();
+    }
+
+    async function generateNewHypotheses() {
+        const container = document.getElementById('chatMessages');
+        container.innerHTML += `<div class="chat-message user">🆕 Сгенерируй новые гипотезы на основе данных</div>`;
+        try {
+            const response = await fetchAPI('/llm/generate_hypotheses_from_data', 'POST');
+            let content = response.response || 'Нет ответа';
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>');
+            content = content.replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>');
+            content = content.replace(/\n/g, '<br>');
+            container.innerHTML += `<div class="chat-message assistant"><div class="message-content">${content}</div></div>`;
+            container.scrollTop = container.scrollHeight;
+        } catch (e) {}
+    }
+
+    async function loadEventsCalendar() {
+        const container = document.getElementById('eventsCalendar');
+        container.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="spinner"></span> Загрузка...</div>';
+        try {
+            const [freezes, updates, next] = await Promise.all([
+                fetchAPI('/events/freezes', 'GET').catch(() => ({freezes: []})),
+                fetchAPI('/events/ios_updates', 'GET').catch(() => ({updates: []})),
+                fetchAPI('/events/next_freeze', 'GET').catch(() => ({}))
+            ]);
+            let html = '';
+            if (next && next.name) {
+                html += `<div class="result-box purple"><h3>⏰ Следующий фриз</h3>
+                    <div><strong>${next.name}</strong></div>
+                    <div>Начало: ${next.start}</div>
+                    <div>Окончание: ${next.end}</div>
+                    <div style="margin-top: 8px;"><strong>Дней до начала: ${next.days_until}</strong></div>
+                </div>`;
+            }
+            if (freezes.freezes && freezes.freezes.length > 0) {
+                html += '<h3 style="margin: 20px 0 12px 0;">❄️ Периоды фризов</h3>';
+                for (const f of freezes.freezes) {
+                    html += `<div class="event-item freeze">
+                        <span class="event-icon">❄️</span>
+                        <span class="event-name">${f.name}</span>
+                        <span class="event-date">${f.start} - ${f.end} (${f.days} дн.)</span>
+                    </div>`;
+                }
+            }
+            if (updates.updates && updates.updates.length > 0) {
+                html += '<h3 style="margin: 20px 0 12px 0;">📱 iOS обновления</h3>';
+                for (const u of updates.updates) {
+                    html += `<div class="event-item ios">
+                        <span class="event-icon">📱</span>
+                        <span class="event-name">iOS ${u.version}</span>
+                        <span class="event-date">${u.date}</span>
+                    </div>`;
+                }
+            }
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<div style="color: var(--danger);">Ошибка загрузки событий</div>';
+        }
+    }
+
+    updateStatus();
+    setInterval(updateStatus, 15000);
+    log('🔹 Сервис v4.1 готов к работе.', 'info');
+    
+    setTimeout(() => {
+        updateStatus();
+        for (let step = 1; step <= 6; step++) {
+            if (STATE.completed[step]) {
+                updateStepStats(step);
+                loadStepPlots(step);
+            }
+        }
+    }, 1000);
+</script>
+</body>
+</html>
