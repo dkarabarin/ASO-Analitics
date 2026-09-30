@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Analytics - ASO Service</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f7fafc;
+            color: #2d3748;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .header h1 { font-size: 28px; }
+        .header p { opacity: 0.9; margin-top: 8px; }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #edf2f7;
+            color: #2d3748;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: #f7fafc;
+            padding: 16px 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-item .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        .stat-item .label {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 4px;
+        }
+        .plots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 16px;
+        }
+        .plot-card {
+            background: #f7fafc;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .plot-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .plot-card .label {
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .btn-success { background: #48bb78; }
+        .btn-success:hover { box-shadow: 0 4px 12px rgba(72,187,120,0.3); }
+        .btn-outline {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-outline:hover { background: #667eea; color: white; }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            .plots-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 ML Analytics</h1>
+            <p>Результаты машинного обучения для прогнозирования изменения позиций</p>
+        </div>
+
+        <div class="card">
+            <h2>📊 Результаты моделей</h2>
+            <div class="stats-grid" id="mlStats">
+                <div class="stat-item">
+                    <div class="value" id="bestModel">-</div>
+                    <div class="label">Лучшая модель</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="maeValue">-</div>
+                    <div class="label">MAE</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="r2Value">-</div>
+                    <div class="label">R²</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="rmseValue">-</div>
+                    <div class="label">RMSE</div>
+                </div>
+            </div>
+            <button class="btn" onclick="loadMLResults()">🔄 Обновить</button>
+        </div>
+
+        <div class="card">
+            <h2>📈 Графики ML</h2>
+            <div class="plots-grid" id="mlPlots">
+                <div style="color: #a0aec0; text-align: center; padding: 40px; grid-column: 1 / -1;">
+                    Загрузите данные и выполните обучение моделей
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔍 Важность признаков</h2>
+            <div id="featureImportance" style="color: #a0aec0; text-align: center; padding: 20px;">
+                Нет данных
+            </div>
+        </div>
+
+        <a href="/" class="back-link">← На главную</a>
+    </div>
+
+    <script>
+        async function fetchAPI(endpoint, method = 'GET') {
+            try {
+                const resp = await fetch(`/api${endpoint}`, { method });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return await resp.json();
+            } catch (e) {
+                console.error(e);
+                return null;
+            }
+        }
+
+        async function loadMLResults() {
+            // Результаты моделей
+            const results = await fetchAPI('/ml/results');
+            if (results && results.results && results.results.length > 0) {
+                const best = results.results[0];
+                document.getElementById('bestModel').textContent = best.Model || '-';
+                document.getElementById('maeValue').textContent = best.MAE ? best.MAE.toFixed(4) : '-';
+                document.getElementById('r2Value').textContent = best.R2 ? best.R2.toFixed(4) : '-';
+                document.getElementById('rmseValue').textContent = best.RMSE ? best.RMSE.toFixed(4) : '-';
+            }
+
+            // Графики ML
+            const plots = await fetchAPI('/eda/plots');
+            if (plots && plots.plots) {
+                const patterns = ['model_comparison', 'feature_importance', 'predictions_vs_actual'];
+                const matched = plots.plots.filter(p => 
+                    patterns.some(pattern => p.name.includes(pattern))
+                );
+                const container = document.getElementById('mlPlots');
+                if (matched.length > 0) {
+                    container.innerHTML = matched.map(p => `
+                        <div class="plot-card">
+                            <img src="${p.url}" alt="${p.name}" loading="lazy">
+                            <div class="label">${p.name.replace('.png', '').replace(/_/g, ' ')}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<div style="color: #a0aec0; text-align: center; padding: 40px; grid-column: 1 / -1;">Нет ML графиков</div>`;
+                }
+            }
+
+            // Важность признаков
+            const importance = await fetchAPI('/ml/feature_importance');
+            if (importance && importance.feature_importance && importance.feature_importance.length > 0) {
+                const container = document.getElementById('featureImportance');
+                let html = `<table style="width:100%; border-collapse: collapse; font-size:14px;">
+                    <tr style="background:#edf2f7;">
+                        <th style="padding:10px 14px; text-align:left;">Признак</th>
+                        <th style="padding:10px 14px; text-align:right;">Важность</th>
+                        <th style="padding:10px 14px; text-align:right;">%</th>
+                        <th style="padding:10px 14px; text-align:left;">Группа</th>
+                    </tr>`;
+                for (const f of importance.feature_importance) {
+                    html += `<tr>
+                        <td style="padding:8px 14px; border-bottom:1px solid #edf2f7;">${f.feature}</td>
+                        <td style="padding:8px 14px; border-bottom:1px solid #edf2f7; text-align:right;">${f.importance.toFixed(4)}</td>
+                        <td style="padding:8px 14px; border-bottom:1px solid #edf2f7; text-align:right;">${f.importance_pct.toFixed(2)}%</td>
+                        <td style="padding:8px 14px; border-bottom:1px solid #edf2f7;">${f.group || '-'}</td>
+                    </tr>`;
+                }
+                html += '</table>';
+                container.innerHTML = html;
+            }
+        }
+
+        // Загрузка при открытии страницы
+        loadMLResults();
+    </script>
+</body>
+</html>
